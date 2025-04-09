@@ -1,6 +1,6 @@
 import java.awt.Graphics;
 import java.util.HashMap;
-
+import java.util.LinkedList;
 public class Landscape {
     private int width;
     private int height;
@@ -18,12 +18,7 @@ public class Landscape {
 
     public void addAgent(Agent a) {
         agents.addFirst(a);
-        int gridSize = Math.max(1, (int) (Math.cbrt(agents.size()) + 1));
-        int gridX = (int) (a.getX() / gridSize);
-        int gridY = (int) (a.getY() / gridSize);
-        int gridZ = (int) (a.getZ() / gridSize);
-        int key = gridX * 1000000 + gridY * 1000 + gridZ;
-        grid.computeIfAbsent(key, _ -> new LinkedList<>()).add(a);
+        addAgentToGrid(a);
     }
 
     public LinkedList<Agent> getNeighbors(double x0, double y0, double z0, double radius) {
@@ -87,6 +82,25 @@ public class Landscape {
             }
         }
 
+        grid.clear();
+        for (Agent a : agents) {
+            addAgentToGrid(a);
+        }
+
         return movedCount;
+    }
+
+    private void addAgentToGrid(Agent a) {
+        int gridSize;
+        if (depth == 1) { // 2D case
+            gridSize = Math.max(1, (int) (Math.sqrt(agents.size()) + 1));
+        } else {
+            gridSize = Math.max(1, (int) (Math.cbrt(agents.size()) + 1));
+        }
+        int gridX = (int) (a.getX() / gridSize);
+        int gridY = (int) (a.getY() / gridSize);
+        int gridZ = (int) (a.getZ() / gridSize);
+        int key = gridX * 1000000 + gridY * 1000 + gridZ;
+        grid.computeIfAbsent(key, _ -> new LinkedList<>()).add(a);
     }
 }

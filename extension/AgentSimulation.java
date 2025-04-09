@@ -7,12 +7,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AgentSimulation {
-    
     public static void main(String[] args) throws InterruptedException {
         if (args.length == 0) {
             simulateAndPlotWithDisplay();
         } else if (args[0].equals("3")) {
-            simulate3DAndPlot();
+            simulateAndPlot();
         } else {
             int N = Integer.parseInt(args[0]);
             int iterations = runExpt(N);
@@ -20,8 +19,17 @@ public class AgentSimulation {
         }
     }
 
+    private static void plot2DChart(int[] agentNumbers, int[] iterationsData, int size) {
+        JPanel chartPanel = new LineChartPanel(agentNumbers, iterationsData, 800, 400);
+        JFrame frame = new JFrame("2D Agent Simulation Iteration Plot (" + size + "x" + size + ")");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Close window without exiting program
+        frame.getContentPane().add(chartPanel);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
     public static void simulateAndPlotWithDisplay() throws InterruptedException {
-        int maxSize = 256;
+        int maxSize = 64;
         int[] agentNumbers = new int[maxSize * maxSize];
         int[] iterationsData = new int[maxSize * maxSize];
 
@@ -31,7 +39,7 @@ public class AgentSimulation {
             iterationsData = new int[maxAgents];
 
             for (int socialAgents = 1; socialAgents < maxAgents; socialAgents++) {
-                for (int antiSocialAgents = 1; antiSocialAgents < maxAgents - socialAgents; antiSocialAgents++) {
+                for (int antiSocialAgents = 1; antiSocialAgents <= maxAgents - socialAgents; antiSocialAgents++) {
                     int totalAgents = socialAgents + antiSocialAgents;
                     if (totalAgents - 1 < agentNumbers.length) { // prevent array index out of bounds
                         int iterations = runExptWithBothAgents(socialAgents, antiSocialAgents, size);
@@ -50,23 +58,16 @@ public class AgentSimulation {
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
             } else {
-                plot3DChart(agentNumbers, iterationsData, size);
+                plot2DChart(agentNumbers, iterationsData, size);
             }
         }
     }
 
-    private static void plot3DChart(int[] agentNumbers, int[] iterationsData, int size) {
-        
-        System.out.println("Plotting 3D chart for size: " + size);
-    
-    }
-
-    public static void simulate3DAndPlot() {
+    public static void simulateAndPlot() {
         ExecutorService executor = Executors.newFixedThreadPool(4);
         for (int size = 2; size <= 32; size++) {
             final int n = size;
-            executor.submit(() -> runExpt3D(new Landscape(n, n, n), n * n * n));
-        }
+            executor.submit(() -> runExpt(new Landscape(n, n, n), n * n * n));
         executor.shutdown();
     }
 
@@ -78,7 +79,7 @@ public class AgentSimulation {
         for (int i = 0; i < N; i++) {
             double x = random.nextDouble() * scape.getWidth();
             double y = random.nextDouble() * scape.getHeight();
-            SocialAgent agent = new SocialAgent(x, y, 25); // 2d constructor
+            SocialAgent agent = new SocialAgent(x, y, 5); // 2d constructor
             scape.addAgent(agent);
         }
         int movedAgents = 1;
@@ -91,7 +92,20 @@ public class AgentSimulation {
         return iterations;
     }
 
-    public static int runExpt3D(Landscape scape, int N) {
+/**
+ * Runs a simulation experiment on a given Landscape with a specified number of agents.
+ *
+ * Clears the existing agents on the Landscape and adds N new randomly positioned 
+ * SocialAgents. The simulation runs until no agents move or a maximum of 5000 
+ * iterations is reached. Each agent's state is updated in each iteration based 
+ * on its neighbors, and the Landscape is updated accordingly.
+ *
+ * @param scape the Landscape on which the simulation is conducted
+ * @param N the number of agents to be added to the Landscape
+ * @return the number of iterations completed before the simulation stops
+ */
+
+    public static int runExpt(Landscape scape, int N) {
         scape.clearAgents(); // Clear agents from previous simulation
         // N randomly positioned agents
         Random random = new Random();
@@ -99,7 +113,7 @@ public class AgentSimulation {
             double x = random.nextDouble() * scape.getWidth();
             double y = random.nextDouble() * scape.getHeight();
             double z = random.nextDouble() * scape.getDepth();
-            SocialAgent agent = new SocialAgent(x, y, z, 25); // 3d constructor
+            SocialAgent agent = new SocialAgent(x, y, z, 5); //  constructor
             scape.addAgent(agent);
         }
         int movedAgents = 1;
@@ -120,7 +134,7 @@ public class AgentSimulation {
         for (int i = 0; i < N; i++) {
             double x = Math.random() * 5000;
             double y = Math.random() * 5000;
-            SocialAgent agent = new SocialAgent(x, y, 25);
+            SocialAgent agent = new SocialAgent(x, y, 5);
             scape.addAgent(agent);
         }
         int movedAgents = 1; // Start non-zero to enter loop
@@ -141,13 +155,13 @@ public class AgentSimulation {
         for (int i = 0; i < socialAgentsCount; i++) {
             double x = random.nextDouble() * scape.getWidth();
             double y = random.nextDouble() * scape.getHeight();
-            SocialAgent agent = new SocialAgent(x, y, 25);
+            SocialAgent agent = new SocialAgent(x, y, 5);
             scape.addAgent(agent);
         }
         for (int i = 0; i < antiSocialAgentsCount; i++) {
             double x = random.nextDouble() * scape.getWidth();
             double y = random.nextDouble() * scape.getHeight();
-            AntiSocialAgent agent = new AntiSocialAgent(x, y, 50);
+            AntiSocialAgent agent = new AntiSocialAgent(x, y, 5);
             scape.addAgent(agent);
         }
         int movedAgents = 1;
@@ -182,29 +196,34 @@ public class AgentSimulation {
             g.fillRect(0, 0, width, height);
             g.setColor(Color.BLACK);
 
-            int maxX = xData.length > 0 ? xData[xData.length - 1] : 0;
-            int maxY = Arrays.stream(yData).max().orElse(0);
+            int maxX = xData.length > 0 ? xData[xData.length - 1] : 1;
+            int maxY = Arrays.stream(yData).max().orElse(1);
 
             // Draw axes
             g.drawLine(50, height - 50, width - 50, height - 50); // X-axis
             g.drawLine(50, 50, 50, height - 50); // Y-axis
 
+
             // Draw labels
             g.drawString("Number of Agents", width / 2, height - 20);
             g.drawString("Iterations", 10, height / 2);
 
-            // Add X-axis tick marks and labels
-            for (int i = 0; i <= 40; i ++) {
-                int xTick = 50 + (int) ((xData[i] * (width - 100)) / (maxX != 0 ? maxX : 1));
+            // Add X-axis ticks (dynamic)
+            int numXTicks = 10;
+            for (int i = 0; i <= numXTicks; i++) {
+                int xValue = (int) ( (double) i / numXTicks * maxX );
+                int xTick = 50 + (int) ( (xValue * (width - 100)) / (maxX != 0 ? maxX : 1) );
                 g.drawLine(xTick, height - 50, xTick, height - 45); // Tick mark
-                g.drawString(String.valueOf(i), xTick - 10, height - 30); // Label
+                g.drawString(String.valueOf(xValue), xTick - 10, height - 30); // Label
             }
 
-            // Add Y-axis tick marks and labels
-            for (int i = 0; i <= 100; i += 10) {
-                int yTick = height - 50 - (int) ((yData[i] * (height - 100)) / (maxY != 0 ? maxY : 1));
+            // Add Y-axis ticks (dynamic)
+            int numYTicks = 10;
+            for (int i = 0; i <= numYTicks; i++) {
+                int yValue = (int) ( (double) i / numYTicks * maxY );
+                int yTick = height - 50 - (int) ( (yValue * (height - 100)) / (maxY != 0 ? maxY : 1) );
                 g.drawLine(50, yTick, 55, yTick); // Tick mark
-                g.drawString(String.valueOf(i), 20, yTick + 5); // Label
+                g.drawString(String.valueOf(yValue), 20, yTick + 5); // Label
             }
 
             // Draw line chart
