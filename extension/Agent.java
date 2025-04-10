@@ -1,20 +1,15 @@
 import java.awt.Graphics;
 public abstract class Agent {
-    private double x;
-    private double y;
-    private double z;
-    protected int radius;
+    protected double x, y, z, radius;
+    public int socialCount;
     protected boolean moved;
 
-    public Agent(double x0, double y0, int radius) {
-        this(x0, y0, 0, radius);
-    }
-
-    public Agent(double x0, double y0, double z0, int radius) {
+    public Agent(double x0, double y0, double z0, double radius, int socialCount) {
         this.x = x0;
         this.y = y0;
         this.z = z0;
         this.radius = radius;
+        this.socialCount = socialCount;
         this.moved = false;
     }
 
@@ -34,7 +29,7 @@ public abstract class Agent {
         return y;
     }
 
-    public int getRadius() {
+    public double getRadius() {
         return radius;
     }
 
@@ -50,15 +45,9 @@ public abstract class Agent {
         this.y = newY;
     }
 
-    public void setRadius(int newRadius) {
-        this.radius = newRadius;
-    }
-
     public void setMoved(boolean moved) {
         this.moved = moved;
     }
-
     public abstract void updateState(Landscape scape);
-    public abstract void draw(Graphics g);
 }
 

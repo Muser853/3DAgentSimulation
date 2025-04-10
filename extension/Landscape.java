@@ -1,10 +1,8 @@
 import java.awt.Graphics;
 import java.util.HashMap;
-import java.util.LinkedList;
+
 public class Landscape {
-    private int width;
-    private int height;
-    private int depth;
+    private int width, height, depth;
     private LinkedList<Agent> agents;
     private HashMap<Integer, LinkedList<Agent>> grid;
 
@@ -28,10 +26,10 @@ public class Landscape {
         int gridY = (int) (y0 / gridSize);
         int gridZ = (int) (z0 / gridSize);
 
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    int key = (gridX + dx) * 1000000 + (gridY + dy) * 1000 + (gridZ + dz);
+        for (int dx = -1; dx < 2; dx++) {
+            for (int dy = -1; dy < 2; dy++) {
+                for (int dz = -1; dz < 2; dz++) {
+                    int key = (gridX + dx) * AgentSimulation.SIDE_LENGTH * AgentSimulation.SIDE_LENGTH + (gridY + dy) * AgentSimulation.SIDE_LENGTH + (gridZ + dz);
                     LinkedList<Agent> cellAgents = grid.getOrDefault(key, new LinkedList<>());
                     for (Agent a : cellAgents) {
                         if (Math.pow(a.getX() - x0, 2) + Math.pow(a.getY() - y0, 2) + Math.pow(a.getZ() - z0, 2) <= Math.pow(radius, 2)) {
@@ -41,7 +39,6 @@ public class Landscape {
                 }
             }
         }
-
         return neighbors;
     }
 
@@ -62,36 +59,24 @@ public class Landscape {
         return width;
     }
 
-    public void draw(Graphics g) {
-        for (Agent a : agents) {
-            a.draw(g);
-        }
-    }
-
     public int updateAgents() {
         int movedCount = 0;
 
         for (Agent a : agents) {
             a.setMoved(false);
         }
-
         for (Agent a : agents) {
             a.updateState(this);
-            if (a.getMoved()) {
-                movedCount++;
-            }
+            if (a.getMoved()) movedCount++;
         }
-
         grid.clear();
-        for (Agent a : agents) {
-            addAgentToGrid(a);
-        }
-
+        for (Agent a : agents) addAgentToGrid(a);
         return movedCount;
     }
 
     private void addAgentToGrid(Agent a) {
-        int gridSize;
+        int volume = width * height * depth;
+        int gridSize = (int) (Math.cbrt(volume) / 2);
         if (depth == 1) { // 2D case
             gridSize = Math.max(1, (int) (Math.sqrt(agents.size()) + 1));
         } else {
