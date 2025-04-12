@@ -1,10 +1,10 @@
-import java.awt.Graphics;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class Landscape {
-    private int width, height, depth;
-    private LinkedList<Agent> agents;
-    private HashMap<Integer, LinkedList<Agent>> grid;
+    protected final int width, height, depth;
+    private final LinkedList<Agent> agents;
+    private final HashMap<Integer, LinkedList<Agent>> grid;
 
     public Landscape(int w, int h, int d) {
         this.width = w;
@@ -62,9 +62,9 @@ public class Landscape {
     public int updateAgents() {
         int movedCount = 0;
 
-        for (Agent a : agents) {
+        for (Agent a : agents)
             a.setMoved(false);
-        }
+
         for (Agent a : agents) {
             a.updateState(this);
             if (a.getMoved()) movedCount++;
@@ -75,17 +75,7 @@ public class Landscape {
     }
 
     private void addAgentToGrid(Agent a) {
-        int volume = width * height * depth;
-        int gridSize = (int) (Math.cbrt(volume) / 2);
-        if (depth == 1) { // 2D case
-            gridSize = Math.max(1, (int) (Math.sqrt(agents.size()) + 1));
-        } else {
-            gridSize = Math.max(1, (int) (Math.cbrt(agents.size()) + 1));
-        }
-        int gridX = (int) (a.getX() / gridSize);
-        int gridY = (int) (a.getY() / gridSize);
-        int gridZ = (int) (a.getZ() / gridSize);
-        int key = gridX * 1000000 + gridY * 1000 + gridZ;
-        grid.computeIfAbsent(key, _ -> new LinkedList<>()).add(a);
+        grid.computeIfAbsent(Objects.hash((int) a.getX(), (int) a.getY(), (int) a.getZ()),
+                _ -> new LinkedList<>()).add(a);
     }
 }

@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.awt.Color;
@@ -9,60 +8,55 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
-import javax.swing.JPanel;
-import javax.imageio.ImageIO;
 import java.io.File;
+import javax.imageio.ImageIO;
+import javax.swing.JPanel;
 
 public class AgentSimulation {
-    protected static final int SIDE_LENGTH = 1024, MAX_ITERATIONS = 3000, CHART_WIDTH = 800, CHART_HEIGHT = 400;
+    public static final int SIDE_LENGTH = 512, CHART_WIDTH = 800, CHART_HEIGHT = 400;
 
-    public static void main(String[] args) throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        
-        for (int width = 1; width < SIDE_LENGTH; width++) {
-            for (int height = 1; height < SIDE_LENGTH; height++) {
-                for (int depth = 1; depth < SIDE_LENGTH; depth++) {
-                    final int w = width, h = height, d = depth, volume = w * h * d, maxRadius = (int) (Math.cbrt(volume) / 2);
-                    
-                    for (int socialRadius = 1; socialRadius < maxRadius; socialRadius += 0.5) {
-                        final int finalSocialRadius = socialRadius;
-                        for (int antiRadius = 1; antiRadius < maxRadius; antiRadius += 0.5) {
-                            final int finalAntiRadius = antiRadius;
-                            for (int socialSocialCount = 1; socialSocialCount < volume; socialSocialCount ++) {
-                                final int finalSocialSocialCount = socialSocialCount;
-                                for (int antiSocialCount = 1; antiSocialCount < volume; antiSocialCount ++) {
-                                    final int finalAntiSocialCount = antiSocialCount;
-                                    executor.submit(() -> 
-                                        processCombination(w, h, d, finalSocialRadius, 
-                                            finalAntiRadius, finalSocialSocialCount, finalAntiSocialCount)
-                                    );
+    public static void main(String[] args) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())) {
+            for (int width = 1; width < SIDE_LENGTH; width++) {
+                for (int height = 1; height < width; height++) {
+                    for (int depth = 1; depth < height; depth++) {
+                        Landscape scape = new Landscape(width, height, depth);
+                        int finalVolume = width * height * depth;
+                        int finalMaxRadius = (int) (Math.cbrt(finalVolume) / 2);
+
+                        executor.submit(() -> {
+                            for (double socialRadius = 1; socialRadius < finalMaxRadius; socialRadius += 0.25) {
+                                for (double antiRadius = 1; antiRadius < finalMaxRadius; antiRadius += 0.25) {
+                                    for (int socialSocialCount = 1; socialSocialCount < finalVolume; socialSocialCount++) {
+                                        for (int antiSocialCount = 1; antiSocialCount < finalVolume; antiSocialCount++) {
+                                            processCombination(scape, finalVolume, socialRadius, antiRadius, socialSocialCount, antiSocialCount);
+                                        }
+                                    }
                                 }
                             }
-                        }
+                        } );
                     }
                 }
             }
+            executor.shutdown();
         }
-        executor.shutdown();
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
     }
 
-    private static void processCombination(int width, int height, int depth, 
-                                          int socialRadius, int antiRadius, 
-                                          int socialSocialCount, int antiSocialCount) {
+    private static void processCombination(Landscape sc, int volume,
+                                           double socialRadius, double antiRadius,
+                                           int socialSocialCount, int antiSocialCount) {
         try {
-            int volume = width * height * depth, maxAgents = volume;
-            int[] minIterations = new int[maxAgents], maxIterations = new int[maxAgents];
-            double[] avgIterations = new double[maxAgents];
-            
+            int[] minIterations = new int[volume], maxIterations = new int[volume];
+            double[] avgIterations = new double[volume];
+
             Arrays.fill(minIterations, Integer.MAX_VALUE);
             Arrays.fill(maxIterations, 0);
             Arrays.fill(avgIterations, 0);
 
-            for (int social = 1; social <= maxAgents; social++) {
-                for (int anti = 1; anti <= maxAgents - social; anti++) {
+            for (int social = 1; social <= volume; social++) {
+                for (int anti = 1; anti <= volume - social; anti++) {
                     int total = social + anti;
-                    int[] results = runExperiments(social, anti, width, height, depth, socialRadius, antiRadius, socialSocialCount, antiSocialCount);
+                    int[] results = runExperiments(social, anti, sc, socialRadius, antiRadius, socialSocialCount, antiSocialCount, volume);
                     
                     if (total - 1 < minIterations.length) {
                         minIterations[total - 1] = Math.min(minIterations[total - 1], results[0]);
@@ -83,8 +77,8 @@ public class AgentSimulation {
                 }
             }
             String title = String.format(
-                "W=%d H=%d D=%d SocRad=%d AntiRad=%d SocCnt=%d AntiCnt=%d",
-                width, height, depth, socialRadius, antiRadius, 
+                "W=%d H=%d D=%d SocRad=%.2f AntiRad=%.2f SocCnt=%d AntiCnt=%d",  // 修改部分：%d → %.2f
+                sc.width, sc.height, sc.depth, socialRadius, antiRadius,
                 socialSocialCount, antiSocialCount
             );
             saveChart(
@@ -99,15 +93,15 @@ public class AgentSimulation {
         }
     }
 
-    private static int[] runExperiments(int socialAgents, int antiAgents, int width, int height, int depth,
-                        int socialRadius, int antiRadius, int socialSocialCount, int antiSocialCount) {
+    private static int[] runExperiments(int socialAgents, int antiAgents, Landscape sc,
+                                        double socialRadius, double antiRadius, int socialSocialCount, int antiSocialCount, int volume) {
         int min = Integer.MAX_VALUE, max = 0, validTrials = 0;
         double total = 0;
         List<int[]> allCoordinates = new ArrayList<>();
 
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                for (int z = 0; z < depth; z++) {
+        for (int x = 0; x < sc.width; x++) {
+            for (int y = 0; y < sc.height; y++) {
+                for (int z = 0; z < sc.depth; z++) {
                     allCoordinates.add(new int[]{x, y, z});
                 }
             }
@@ -119,18 +113,19 @@ public class AgentSimulation {
             for (List<int[]> antiPositions : antiAgentPositions) {
                 if (hasOverlap(socialPositions, antiPositions)) continue;
 
-                Landscape scape = new Landscape(width, height, depth);
+                sc.clearAgents();
                 for (int[] coord : socialPositions) {
-                    scape.addAgent(new SocialAgent(coord[0], coord[1], coord[2], socialRadius, socialSocialCount));
+                    sc.addAgent(new SocialAgent(coord[0], coord[1], coord[2], socialRadius, socialSocialCount));
                 }
                 for (int[] coord : antiPositions) {
-                    scape.addAgent(new AntiSocialAgent(coord[0], coord[1], coord[2], antiRadius, antiSocialCount));
+                    sc.addAgent(new AntiSocialAgent(coord[0], coord[1], coord[2], antiRadius, antiSocialCount));
                 }
+                int bound = volume * 512;
                 int iterations; // Run the simulation
-                for (iterations = 0; iterations < MAX_ITERATIONS; iterations++) {
-                    if (scape.updateAgents() == 0) break;
+                for (iterations = 0; iterations < bound; iterations++) {
+                    if (sc.updateAgents() == 0) break;
                 }
-                if (iterations < MAX_ITERATIONS) {
+                if (iterations != bound) {
                     min = Math.min(min, iterations);
                     max = Math.max(max, iterations);
                     total += iterations;
@@ -156,7 +151,7 @@ public class AgentSimulation {
         for (int i = start; i < coordinates.size(); i++) {
             current.add(coordinates.get(i)); //The current combination being constructed.
             generateCombinationsHelper(coordinates, k, i + 1, current, combinations);
-            current.remove(current.size() - 1); //A list of coordinates from which to generate combinations
+            current.removeLast(); //A list of coordinates from which to generate combinations
         } //Recursively generates all possible combinations of coordinates of size `k`.
     }
 
@@ -224,7 +219,7 @@ public class AgentSimulation {
             g.setColor(Color.GREEN);
             g.drawString("Max", width - 100, 80);
             drawLine(g, Color.RED, minData, maxX, maxY);
-            drawLine(g, Color.BLUE, avgData, maxX, maxY);
+            drawLine(g, avgData, maxX, maxY);
             drawLine(g, Color.GREEN, maxData, maxX, maxY);
         }
         private void drawLine(Graphics g, Color color, int[] yValues, int maxX, int maxY) {
@@ -234,8 +229,8 @@ public class AgentSimulation {
                 g.drawLine(x1, y1, x2, y2);
             }
         }
-        private void drawLine(Graphics g, Color color, double[] yValues, int maxX, int maxY) {
-            g.setColor(color);
+        private void drawLine(Graphics g, double[] yValues, int maxX, int maxY) {
+            g.setColor(Color.BLUE);
             for (int i = 1; i < xData.length && i < yValues.length; i++) {
                 int x1 = mapX(xData[i - 1], maxX), y1 = mapY(yValues[i - 1], maxY), x2 = mapX(xData[i], maxX), y2 = mapY(yValues[i], maxY);
                 g.drawLine(x1, y1, x2, y2);
