@@ -57,8 +57,8 @@ The AgentSimulation project is a Java-based simulation framework designed to mod
 3. **Simulation Data**:
    - The space complexity is `O(T * S * A)` for storing the results of all experiments, where `T` is the number of trials, `S` is the number of social agent positions, and `A` is the number of anti-social agent positions.
 
-## Example
-Here is an example of how to run a simulation with specific parameters:
+## Main
+submit different landscapes to different processors and iterate over social and antiSocial radius and social and antiSocial counts:
 ```java
 public static void main(String[] args) {
         try (ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())) {
@@ -99,8 +99,6 @@ The simulation generates PNG images of line charts in the `charts` directory. Ea
 - `javax.swing` for chart panel creation
 - `java.util.concurrent` for managing simulation threads
 
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for more details
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit a pull request with your changes
