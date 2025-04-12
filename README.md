@@ -83,7 +83,7 @@ public static void main(String[] args) {
                     }
                 }
             }
-            executor.shutdown();
+            executor.shutdown(); // make sure executor services are shut down, while try with resources statement automatically shuts down executor services
         }
     }
 
