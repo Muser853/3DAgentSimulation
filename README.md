@@ -60,36 +60,33 @@ The AgentSimulation project is a Java-based simulation framework designed to mod
 ## Example
 Here is an example of how to run a simulation with specific parameters:
 ```java
-public static void main(String[] args) throws InterruptedException {
-    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    
-    for (int width = 1; width < SIDE_LENGTH; width++) {
-        for (int height = 1; height < SIDE_LENGTH; height++) {
-            for (int depth = 1; depth < SIDE_LENGTH; depth++) {
-                final int w = width, h = height, d = depth, volume = w * h * d, maxRadius = (int) (Math.cbrt(volume) / 2);
-                
-                for (int socialRadius = 1; socialRadius < maxRadius; socialRadius += 0.5) {
-                    final int finalSocialRadius = socialRadius;
-                    for (int antiRadius = 1; antiRadius < maxRadius; antiRadius += 0.5) {
-                        final int finalAntiRadius = antiRadius;
-                        for (int socialSocialCount = 1; socialSocialCount < volume; socialSocialCount ++) {
-                            final int finalSocialSocialCount = socialSocialCount;
-                            for (int antiSocialCount = 1; antiSocialCount < volume; antiSocialCount ++) {
-                                final int finalAntiSocialCount = antiSocialCount;
-                                executor.submit(() -> 
-                                    processCombination(w, h, d, finalSocialRadius, 
-                                        finalAntiRadius, finalSocialSocialCount, finalAntiSocialCount)
-                                );
+public static void main(String[] args) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())) {
+            for (int width = 1; width < SIDE_LENGTH; width++) {
+                for (int height = 1; height < width; height++) {
+                    for (int depth = 1; depth < height; depth++) {
+                        Landscape scape = new Landscape(width, height, depth);
+                        int finalVolume = width * height * depth;
+                        int finalMaxRadius = (int) (Math.cbrt(finalVolume) / 2);
+
+                        executor.submit(() -> {
+                            for (double socialRadius = 1; socialRadius < finalMaxRadius; socialRadius += 0.25) {
+                                for (double antiRadius = 1; antiRadius < finalMaxRadius; antiRadius += 0.25) {
+                                    for (int socialSocialCount = 1; socialSocialCount < finalVolume; socialSocialCount++) {
+                                        for (int antiSocialCount = 1; antiSocialCount < finalVolume; antiSocialCount++) {
+                                            processCombination(scape, finalVolume, socialRadius, antiRadius, socialSocialCount, antiSocialCount);
+                                        }
+                                    }
+                                }
                             }
-                        }
+                        } );
                     }
                 }
             }
+            executor.shutdown();
         }
     }
-    executor.shutdown();
-    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-}
+
 ```
 
 
