@@ -29,7 +29,7 @@ public class Landscape {
         for (int dx = -1; dx < 2; dx++) {
             for (int dy = -1; dy < 2; dy++) {
                 for (int dz = -1; dz < 2; dz++) {
-                    int key = (gridX + dx) * AgentSimulation.SIDE_LENGTH * AgentSimulation.SIDE_LENGTH + (gridY + dy) * AgentSimulation.SIDE_LENGTH + (gridZ + dz);
+                    int key = (gridX + dx) * AgentSimulationSVG.SIDE_LENGTH * AgentSimulationSVG.SIDE_LENGTH + (gridY + dy) * AgentSimulationSVG.SIDE_LENGTH + (gridZ + dz);
                     LinkedList<Agent> cellAgents = grid.getOrDefault(key, new LinkedList<>());
                     for (Agent a : cellAgents) {
                         if (Math.pow(a.getX() - x0, 2) + Math.pow(a.getY() - y0, 2) + Math.pow(a.getZ() - z0, 2) <= Math.pow(radius, 2)) {
